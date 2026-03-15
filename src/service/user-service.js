@@ -1,8 +1,9 @@
 import { ResponseError } from "../error/response-error.js";
 import { prisma } from "../lib/prisma.js";
-import { registerUserValidation } from "../validation/user-validation.js";
+import { loginUserValidation, registerUserValidation } from "../validation/user-validation.js";
 import { validate } from "../validation/validation.js";
 import bcrypt from "bcrypt";
+import { v4 as uuid } from "uuid";
 
 const register = async (request) => {
     const user = validate(registerUserValidation, request);
@@ -13,14 +14,14 @@ const register = async (request) => {
         }
     });
 
-    if(countUser === 1) {
+    if (countUser === 1) {
         throw new ResponseError(400, "Username already exist");
     }
 
     user.password = await bcrypt.hash(user.password, 10);
 
     return prisma.user.create({
-        data: user, 
+        data: user,
         select: {
             username: true,
             name: true
@@ -28,6 +29,45 @@ const register = async (request) => {
     });
 }
 
+const login = async (request) => {
+    const loginRequest = validate(loginUserValidation, request);
+
+    const user = await prisma.user.findUnique({
+        where: {
+            username: loginRequest.username
+        },
+        select: {
+            username: true,
+            password: true
+        }
+    });
+
+    if (!user) {
+        throw new ResponseError(401, "username or password is invalid");
+    }
+
+    const isPasswordValid = await bcrypt.compare(loginRequest.password, user.password)
+
+    if (!isPasswordValid) {
+        throw new ResponseError(401, "username or password is invalid");
+    }
+
+    const token = uuid().toString();
+
+    return prisma.user.update({
+        data: {
+            token: token
+        },
+        where: {
+            username: user.username
+        },
+        select: {
+            token: true
+        }
+    });
+}
+
 export default {
-    register
+    register,
+    login
 }
