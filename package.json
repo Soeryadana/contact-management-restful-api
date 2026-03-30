@@ -4,11 +4,13 @@
   "description": "Belajar NodeJS Restful API",
   "main": "src/main.js",
   "scripts": {
-    "test": "jest -i"
+    "test": "jest --runInBand --detectOpenHandles"
   },
   "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000,
     "transform": {
-      "^.+\\.[t|j]sx?$": "babel-jest"
+      "^.+\\.[tj]sx?$": "babel-jest"
     }
   },
   "author": "Soeryadana",
